@@ -1,0 +1,107 @@
+import React, { Component } from 'react';
+import { TextInput, View, Button, StyleSheet } from 'react-native';
+
+let timer;
+export default class App extends Component {
+  constructor() {
+    super();
+    this.state = {
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      backgroundColor: "white"
+    };
+  }
+  startTimer = () => {
+    timer = setInterval(() => {
+      if (this.state.seconds > 0) {
+        this.setState({
+          seconds: this.state.seconds - 1,
+        });
+        if (this.state.seconds == 0 && this.state.minutes != 0) {
+          this.setState({
+            seconds: 59,
+            minutes: this.state.minutes - 1,
+          });
+        }
+        if (this.state.minutes == 0 && this.state.hours != 0) {
+          this.setState({
+            minutes: 59,
+            hours: this.state.hours - 1,
+          });
+        }
+      } 9
+      if (this.state.hours == 0 && this.state.minutes == 0 && this.state.seconds == 0) {
+        clearInterval(timer);
+        this.setState({ backgroundColor: "red" });
+        alert('Time Out');
+      }
+    }, 1000);
+  };
+  endTimer = () => {
+    this.setState({
+      hours: 0,
+      minutes: 0,
+      seconds: 0
+    });
+    clearInterval(timer);
+    alert('Time Out');
+
+  };
+
+  render() {
+    return (
+      <View style={[styles.container, { backgroundColor: this.state.backgroundColor }]} >
+        <View style={styles.timer}>
+          <TextInput
+            keyboardType="numeric"
+            maxLength={2}
+            style={styles.text}
+            onChangeText={(hours) => this.setState({ hours })}
+            value={`${this.state.hours}:`}
+          />
+          <TextInput
+            keyboardType="numeric"
+            maxLength={2}
+            style={styles.text}
+            onChangeText={(minutes) => this.setState({ minutes })}
+            value={`${this.state.minutes}:`}
+          />
+          <TextInput keyboardType="numeric"
+            maxLength={2}
+            style={styles.text}
+            onChangeText={(seconds) => this.setState({ seconds })}
+            value={`${this.state.seconds}`}
+          />
+        </View>
+        <Button
+          style={{ marginBottom: 20 }}
+          onPress={() => this.startTimer()}
+          title="Start Timer"
+          color="#006400"
+        />
+        <Button
+          onPress={() => this.endTimer()}
+          title="End Timer"
+          color="#FF0000"
+        />
+      </View>
+    );
+  }
+}
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    height: 100,
+    padding: 20,
+    alignItems: 'center',
+  },
+  timer: {
+    marginBottom: 30,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  text: {
+    fontSize: 40,
+  },
+});
