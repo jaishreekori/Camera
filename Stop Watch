@@ -1,0 +1,101 @@
+
+import React, { Component } from 'react';
+import { Text, View, Button, StyleSheet, TextInput } from 'react-native';
+
+let timer;
+export default class App extends Component {
+   constructor(props) {
+      super(props);
+      this.state = {
+         timer: null,
+         minutes: '00',
+         seconds: '00',
+         startDisable: false
+      };
+   }
+   componentWillUnmount() {
+      clearInterval(this.state.timer);
+   }
+   onButtonStart = () => {
+      timer = setInterval(() => {
+         var sec = (Number(this.state.seconds) + 1).toString(),
+            min = this.state.minutes;
+         if (Number(this.state.seconds) == 59) {
+            min = (Number(this.state.minutes) + 1).toString(),
+               sec = '00';
+         }
+         this.setState({
+            minutes: min.length == 1 ? '0' + min : min,
+            seconds: sec.length == 1 ? '0' + sec : sec
+         });
+      }, 1000);
+      this.setState({ timer });
+      this.setState({ startDisable: true });
+   };
+   onButtonStop = () => {
+      clearInterval(this.state.timer);
+      this.setState({ startDisable: false })
+   };
+   onButtonClear = () => {
+      this.setState({
+         timer: null,
+         minutes: '00',
+         seconds: '00',
+      });
+      clearInterval(timer);
+   }
+   render() {
+      return (
+         <View style={styles.container}>
+            <Text style={styles.timer}>
+               {this.state.minutes} : {this.state.seconds}
+            </Text>
+
+            <Button
+               style={[styles.button, { BackgroundColor: this.state.startDisable ? '#B0BEC5' : '#FF6F00' }]}
+               onPress={() => this.onButtonStart()}
+               title="START"
+               color="#006400"
+            />
+            <Text>{}</Text>
+            <Button
+               style={styles.button}
+               onPress={() => this.onButtonStop()}
+               title="STOP"
+               color="blue"
+            />
+            <Text>{}</Text>
+            <Button
+               style={styles.button}
+               onPress={() => this.onButtonClear()}
+               title="CLEAR"
+               color="pink"
+            />
+         </View>
+      );
+   }
+}
+
+const styles = StyleSheet.create({
+   container: {
+      flex: 1,
+      height: 100,
+      padding: 20,
+      alignItems: 'center',
+      marginTop: 50
+   },
+   timer: {
+      marginBottom: 30,
+      fontSize: 40,
+      color: 'black'
+   },
+   button: {
+      width: '80%',
+      paddingTop: 8,
+      fontSize: 25,
+      paddingBottom: 8,
+      borderRadius: 7,
+      marginTop: 10
+   },
+});
+
