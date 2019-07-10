@@ -7,18 +7,19 @@ import {
     TouchableOpacity,
     TimePickerAndroid,
     DatePickerAndroid,
-    TextInput,
-    AsyncStorage
+    TextInput
 } from 'react-native';
-
+import AsyncStorage from '@react-native-community/async-storage';
+import { StackActions, NavigationActions } from 'react-navigation';
+const reminderArr = [];
 
 export default class Reminder extends Component {
     constructor() {
         super();
         this.setDate = this.setDate.bind(this);
         this.state = {
-            tasks: [],
             chosenDate: new Date(),
+            tasks: [],
             chosenAndroidTime: '00:00',
             text: '',
             androidDate: `${new Date().getUTCDate()}/${new Date().getUTCMonth() +
@@ -66,20 +67,35 @@ export default class Reminder extends Component {
         this.setState({ text: text })
     }
     saveReminder = () => {
-        let tasks = this.state.tasks;
-        tasks.unshift({
-            androidDate: this.state.androidDate,
-            chosenAndroidTime: this.state.chosenAndroidTime,
-            text: this.state.text,
-        })
-        this.setState({ tasks: tasks })
-        this.setValue(tasks)
-        console.log(tasks)
+        reminderArr.push(this.getReminder())
+        this.storeData(reminderArr)
     }
+
+    getReminder() {
+        return (
+            {
+                androidDate: this.state.androidDate,
+                chosenAndroidTime: this.state.chosenAndroidTime,
+                text: this.state.text,
+            }
+        )
+    }
+
+    storeData = async (value) => {
+        console.log("storeData " + JSON.stringify(value))
+        try {
+            await AsyncStorage.setItem('tasks', JSON.stringify(value))
+        } catch (e) {
+            // saving error
+            console.log(e)
+        }
+    } 
+
     setValue = (value) => {
+        console.log("test " + JSON.stringify(value))
         AsyncStorage.setItem('tasks', value);
-        console.log(tasks)
-     }
+        console.log(this.state.tasks)
+    }
     render() {
         return (
             <View style={styles.container}>
@@ -101,6 +117,16 @@ export default class Reminder extends Component {
                     onPress={this.saveReminder}>
                     <Text style={{ fontSize: 20, fontWeight: 'bold', margin: 10, alignContent: 'center' }}>Save Reminder</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={{ height: 40, width: "40%", borderWidth: 2, backgroundColor: 'green', marginTop: 50, alignSelf: 'center' }}
+                    onPress={() => {
+                        this.props.navigation.navigate('ReminderList', {
+                            androidDate: this.state.androidDate,
+                            chosenAndroidTime: this.state.chosenAndroidTime,
+                            text: this.state.text,
+                        });
+                    }}>
+                    <Text style={{ fontSize: 19, fontWeight: 'bold', margin: 10, alignContent: 'center' }}>Go To Reminder</Text>
+                </TouchableOpacity>
             </View>
         );
     }
@@ -113,38 +139,70 @@ const styles = StyleSheet.create({
     },
 
 });
-
 =======================ReminderList.js========================================
 
 import React, { Component } from 'react';
 import { View, FlatList, Text, StyleSheet } from 'react-native';
-import Reminder from './Reminder';
+import AsyncStorage from '@react-native-community/async-storage';
+import { StackActions, NavigationActions } from 'react-navigation';
 
 export default class ReminderList extends Component {
     constructor() {
         super();
         this.state = {
             tasks: [],
+            data: ''
         }
     }
-    componentDidMount = () => AsyncStorage.getItem('tasks').then((value) => this.setState({ 'tasks': value }))
+    componentDidMount() {
+        this.getData();
+        // AsyncStorage.getItem('tasks').then((value) => this.setState({ tasks: value }))
+    }
+    getData = async () => {
+        try {
+            const value = await AsyncStorage.getItem('tasks')
+            console.log("getData " + value)
+            this.setState({ data: value })
+            if (value !== null) {
+                // value previously stored
+                // this.setState({ tasks: value })
+                // setTimeout(() => {
+                //     console.log("getData1 " + JSON.stringify(value))
+                // }, 50);
+            }
+        } catch (e) {
+            // error reading value
+            console.log(e)
+        }
+    }
+
     render() {
+        const { navigation } = this.props;
+        const androidDate = navigation.getParam('androidDate')
+        const chosenAndroidTime = navigation.getParam('chosenAndroidTime')
+        const text = navigation.getParam('text')
         return (
             <View style={styles.container}>
                 <Text style={styles.heading}>
                     Upcoming Reminders
                 </Text>
+                {/* <Text>Date: {JSON.stringify(androidDate)}</Text>
+                <Text>Time: {JSON.stringify(chosenAndroidTime)}</Text>
+                <Text>Text: {JSON.stringify(text)}</Text> */}
                 <FlatList
                     style={styles.list}
-                    data={this.state.tasks}
+                    data={this.state.data}
                     renderItem={({ item, index }) =>
                         <View style={{ flexDirection: 'row', alignItems: 'center', width: "100%" }}>
                             <View style={styles.listItemCont}>
                                 <Text style={styles.listItem}>
-                                    Task:  {item.text}
+                                    Task:  {JSON.stringify(text)}
                                 </Text>
                                 <Text style={styles.listItem}>
-                                    LastDate:  {item.chosenDate}
+                                    Date:  {JSON.stringify(androidDate)}
+                                </Text>
+                                <Text style={styles.listItem}>
+                                    Time:  {JSON.stringify(chosenAndroidTime)}
                                 </Text>
                             </View>
                             {/* <TouchableOpacity
@@ -160,7 +218,7 @@ export default class ReminderList extends Component {
                             <View style={styles.hr} />
                         </View>}
                     extraData={this.state}
-                    keyExtractor={(index) => index.toString()}
+                    keyExtractor={(item, index) => index.toString()}
                 />
             </View>
         );
@@ -216,23 +274,13 @@ export default class Home extends Component {
             <View style={styles.container}>
                 <TouchableOpacity style={{ height: 40, width: "38%", borderWidth: 2, backgroundColor: 'green', marginBottom: 20 }}
                     onPress={() => {
-                        this.props.navigation.dispatch(
-                            StackActions.reset({
-                                index: 0,
-                                actions: [NavigationActions.navigate({ routeName: 'Reminder' })],
-                            })
-                        );
+                        this.props.navigation.navigate('Reminder')
                     }}>
                     <Text style={styles.textView}>Add Reminder</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={{ height: 40, width: "45%", borderWidth: 2, backgroundColor: 'green' }}
                     onPress={() => {
-                        this.props.navigation.dispatch(
-                            StackActions.reset({
-                                index: 0,
-                                actions: [NavigationActions.navigate({ routeName: 'ReminderList' })],
-                            })
-                        );
+                        this.props.navigation.navigate('ReminderList')
                     }}>
                     <Text style={styles.textView}>List of Reminders</Text>
                 </TouchableOpacity>
